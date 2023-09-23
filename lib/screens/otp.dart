@@ -1,7 +1,12 @@
 // ignore_for_file: unnecessary_brace_in_string_interps
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:learnifyassessment/screens/login.dart';
 import 'package:pinput/pinput.dart';
+import 'package:provider/provider.dart';
+
+import '../main.dart';
 
 class Otp extends StatefulWidget {
   const Otp({super.key});
@@ -11,14 +16,17 @@ class Otp extends StatefulWidget {
 }
 
 class _OtpState extends State<Otp> {
+  final FirebaseAuth auth = FirebaseAuth.instance;
   @override
   Widget build(BuildContext context) {
+    final myModel = Provider.of<MyModel>(context, listen: false);
     final Map<String, dynamic>? arguments =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
 
     final String phoneCode = arguments?['phoneCode'] as String? ?? '';
     final String phoneNumber = arguments?['phoneNumber'] as String? ?? '';
     // Access the 'textshow' argument (string)
+    var code = "";
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -67,10 +75,13 @@ class _OtpState extends State<Otp> {
               height: 20,
             ),
             Pinput(
-              length: 4,
+              length: 6,
               showCursor: true,
+              onChanged: (value) {
+                myModel.updateCode(value);
+              },
               defaultPinTheme: PinTheme(
-                width: 70,
+                width: 50,
                 height: 50,
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
@@ -84,20 +95,75 @@ class _OtpState extends State<Otp> {
             ),
             Padding(
               padding: const EdgeInsets.only(left: 25.0, right: 25.0),
-              child: Container(
-                height: 58,
-                width: 8.9 * MediaQuery.of(context).size.width / 10,
-                decoration: BoxDecoration(
-                  color: Colors.red.shade400,
-                  borderRadius: const BorderRadius.all(Radius.circular(30)),
-                ),
-                child: const Center(
-                  child: Text(
-                    "Get OTP",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+              child: InkWell(
+                onTap: () async {
+                  // Create a PhoneAuthCredential with the code
+                  try {
+                    PhoneAuthCredential credential =
+                        PhoneAuthProvider.credential(
+                            verificationId: Login.verify,
+                            smsCode: myModel.code);
+
+                    // Sign the user in (or link) with the credential
+                    await auth.signInWithCredential(credential);
+                    Navigator.pushNamed(
+                      context,
+                      '/loginscreen',
+                    );
+                    showDialog(
+                      context:
+                          context, // Replace 'context' with your current BuildContext
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text("Verification Successful"),
+                          content: const Text("Your details has Submittted."),
+                          actions: <Widget>[
+                            ElevatedButton(
+                              child: const Text("OK"),
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  } catch (e) {
+                    showDialog(
+                      context:
+                          context, // Replace 'context' with your current BuildContext
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text("Verification Failed!!"),
+                          content: const Text("Wrong or Invalid OTP"),
+                          actions: <Widget>[
+                            ElevatedButton(
+                              child: const Text("OK"),
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                },
+                child: Container(
+                  height: 58,
+                  width: 8.9 * MediaQuery.of(context).size.width / 10,
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade400,
+                    borderRadius: const BorderRadius.all(Radius.circular(30)),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      "Verify  OTP",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),

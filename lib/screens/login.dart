@@ -1,8 +1,10 @@
 import 'package:country_picker/country_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
+  static String verify = "";
 
   @override
   State<Login> createState() => _LoginState();
@@ -98,17 +100,27 @@ class _LoginState extends State<Login> {
               height: 20,
             ),
             InkWell(
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  '/otpscreen',
-                  arguments: {
-                    'phoneCode': selectedCountry.phoneCode,
-                    'phoneNumber': phoneController.text,
+              onTap: () async {
+                print('+${selectedCountry.phoneCode} ${phoneController.text}');
+                await FirebaseAuth.instance.verifyPhoneNumber(
+                  phoneNumber:
+                      '+${selectedCountry.phoneCode} ${phoneController.text}',
+                  verificationCompleted: (PhoneAuthCredential credential) {},
+                  verificationFailed: (FirebaseAuthException e) {},
+                  codeSent: (String verificationId, int? resendToken) {
+                    Login.verify = verificationId;
+                    Navigator.pushNamed(
+                      context,
+                      '/otpscreen',
+                      arguments: {
+                        'phoneCode': selectedCountry.phoneCode,
+                        'phoneNumber': phoneController.text,
+                      },
+                    );
                   },
+                  codeAutoRetrievalTimeout: (String verificationId) {},
                 );
               },
-              //  '${selectedCountry.phoneCode} ${phoneController.text}'
               child: Container(
                 height: 58,
                 width: 8.9 * MediaQuery.of(context).size.width / 10,
